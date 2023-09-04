@@ -8,22 +8,48 @@ date: "2023-09-04"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+## 5.6 sfパッケージによる実例
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(sf)
+library(NipponMap)
+library(tidyverse)
+library(mapview)
 ```
 
-## Including Plots
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+shp <- system.file("shapes/jpn.shp", package = "NipponMap")
+pref <- read_sf(shp)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+CRSの確認すると、なにも設定されていない。
+```{r}
+st_crs(pref)
+```
+
+よくある、EPSG=4326にしてみましょう
+```{r}
+st_crs(pref) <- 4326
+```
+
+```{r}
+mapview(pref)
+```
+
+## 5.7 地図化の利絵
+
+```{r}
+plot(pref[, "population"])
+```
+
+カラーパレットを指定してみる
+```{r}
+nc <- 7
+pal <- RColorBrewer::brewer.pal(nc, "RdYlGn")
+plot(pref[, "population"], pal = pal, axes=TRUE, nbreaks = nc)
+
+
+```
+
+
