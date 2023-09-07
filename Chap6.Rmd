@@ -1,0 +1,92 @@
+---
+title: "Chap6"
+output: html_document
+date: "2023-09-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(sf)
+library(tidyverse)
+library(spdep)
+```
+
+
+## ss
+
+ - 空間相関
+ - 空間異質性
+ 
+## 空間相関
+ - 正、近いのは似ている
+ - 負、近いのと逆
+ 
+## 近さとは？
+
+ - 近隣ゾーン
+ - 距離元帥関数
+ 
+近隣ぞーM
+ - ルーク型
+ - クイーン型
+ - 近隣kゾーン
+ 
+## spdep による近接行列
+
+```{r}
+shp <- system.file("shapes/jpn.shp", package = "NipponMap")
+pref0 <- read_sf(shp)
+pref0b <- pref0[pref0$name != "Okinawa", ]
+st_crs(pref0b) <- 4326
+```
+
+```{r}
+pref <- st_transform(pref0b, crs = 6677)
+```
+
+```{r}
+nbl <- spdep::poly2nb(pref)
+nbl
+```
+
+クイーン型の近接行列の可視化
+```{r}
+coords <- st_coordinates(st_centroid(pref))
+plot(st_geometry(pref), col = "white", border = "grey")
+plot(nbl, coords, add = T, col = "red", cex=0.01, lwd=1.5)
+?poly2nb
+```
+
+最近隣4ゾーンは以下のように
+```{r}
+knn <- knearneigh(coords, 4)
+nb2 <- knn2nb(knn)
+```
+
+からの可視化
+```{r}
+plot(st_geometry(pref), border = "grey")
+plot(nb2, coords, add = T, col = "red", cex = 0.01, lwd = 1.5)
+```
+
+### 近接行列の型変換
+
+`listw`という形式にしたい
+```{r}
+w2 <- nb2listw(nb2)
+```
+
+さらに、行列形式にすることで、各要素を見ることができる
+```{r}
+#show(w2) そのままではなにがなにやら
+w2mat <- listw2mat(w2)
+```
+
+なおそのままでは 46x46 であるので、先頭から5つ分だけ抽出してみると、
+```{r}
+w2mat[1:5, 1:5]
+```
+
