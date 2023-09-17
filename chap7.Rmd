@@ -1,0 +1,123 @@
+---
+title: "Chap7"
+output: html_document
+date: "2023-09-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 大域空間統計量
+
+```{r}
+library(sf)
+library(tidyverse)
+library(spdep)
+library(rgdal)
+library(NipponMap)
+```
+
+都道府県データの整理（沖縄除く
+```{r}
+shp <- system.file("shapes/jpn.shp", package = "NipponMap")
+pref0 <- read_sf(shp)
+pref0b <- pref0[pref0$name != "Okinawa", ]
+st_crs(pref0b) <- 4326
+pref <- st_transform(pref0b, crs = 6677)
+```
+
+最近隣4ゾーンを用いる
+```{r}
+coords <- st_coordinates(st_centroid(pref))
+knn <- knearneigh(coords, 4)
+nb2 <- knn2nb(knn)
+w <- nb2listw(nb2) #重み
+pop <- pref$population
+```
+
+人口のモランI統計量は次のコマンド
+ `spdep::moran.test`
+ - 第1引数：相関があるか調べたい値
+ - 第2引数：重みのリスト、nb2listw形式で。
+   - nb2listw には、どことどこが近接してて（近接行列がリスト形式で格納みたいな）
+   - 近接してるところの重みはどのくらいか、が格納されてる
+
+```{r}
+moran <- moran.test(pop, listw = w)
+moran
+```
+
+結果の見方は p値 0.00007 とか。
+モランI統計量：Moran I statistic -> 0.31
+E[I]：Expectation -> -0.022
+V[I]：Variance -> 0.0077
+z[I]：standard deviate
+とかである。
+
+デフォルトでは、正の相関の有無を片側検定で行う。
+この対立仮設は、 I > E[I] である。
+実際に出た値は,$estimate[1]がI, $estimate[2]がE[I]として
+```{r}
+# 帰無仮説は I < E[I]
+moran$estimate[1] < moran$estimate[2]
+```
+
+となり、帰無仮説は棄却される。よって相関がある、となる。
+
+### ギアリC統計量
+
+統計量は0以上の値を取る
+値が1未満のとき、正の空間相関があることを示す
+c=1のとき、ランダム、
+1より大きいとき負の空間相関があることを示す。
+モラン統計量と同様、仮説検定では
+帰無仮説：空間相関が存在しない、の下で得られるZ値を用いる。
+帰無仮説の棄却により、対立仮設、空間相関が存在する、を採用する。
+
+```{r}
+geary <- geary.test(pop, listw = w)
+geary
+```
+
+期待値は Expectation
+分散は Variance
+Geary C statictic がZ値である。
+p値は0.057なので、まあ、5%優位水準ではダメだが、という程度である。
+
+とかやってきたけど、基本的にモランI統計量のほうがスタンダード。
+
+### G/G*統計量
+
+空間異質性の指標としてG統計量がある。
+これは、非負の観測地にたいする統計量である。
+Gは0以上の値をとる。0に近いときランダムな空間分布をもつこと、より大きければ
+大きな観測値が特定の地域に集中していることを意味する。
+
+これまで重み行列では、行標準化してきたが、この統計量では標準化しないのがふつう。
+重みなし行列は次のように求める。
+オプションで`style = "B"`を点ければよい。
+```{r}
+w_b <- nb2listw(nb2, style = "B")
+```
+
+統計量は次のように出す。
+```{r}
+G <- globalG.test(pop, listw = w_b)
+```
+
+
+G*も出せるが、重み行列の対角成分は1にする（理由は？
+```{r}
+w_b2 <- nb2listw(include.self(nb2), style = "B")
+Gstar <- globalG.test(pop, listw = w_b2)
+```
+
+結果の確認。
+帰無仮説は、空間集積が存在しない、つまりz値が0。
+対立仮設はz>0 として片側検定。p値からして、帰無仮説は棄却され対立仮設。
+つまり空間集積が存在する、となる。
+```{r}
+Gstar
+```
+
