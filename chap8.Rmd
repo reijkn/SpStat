@@ -1,0 +1,98 @@
+---
+title: "Chap8"
+output: html_document
+date: "2023-09-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(spdep)
+```
+
+
+### ローカルモランI統計量
+
+空間相関の有無を、ゾーンごとに検定する。
+帰無仮説「ゾーンiの周辺には空間相関が存在しない」の下で得るz値を使用する
+計算は、関数が変わる。`localmoran`である。
+
+```{r}
+lmoran <- localmoran(pop, listw = w)
+```
+
+通常のモランI統計量と異なるのは、こう、出力みたいな？
+要は入力した統計量の長さに応じる、である。
+ゾーンiひとつひとつについてz値が出るなどするわけだ。
+
+```{r}
+lmoran
+```
+
+で、ゾーンごとに計算しているのだから地図上へのプロットも可能である。
+例えばこのように
+```{r}
+pref$lmoran <- lmoran[, "Ii"]
+breaks <- c(-5, -2, -1, -0.5, 0, 0.5, 1, 2, 5)
+nc <- length(breaks) -1
+pal <- rev(RColorBrewer::brewer.pal(n = nc, name = "RdYlBu"))
+plot(pref[, "lmoran"], pal = pal, breaks = breaks)
+```
+
+この種の地図上plotは、ちょっと記憶を引っ張り出したいね。
+`tmap`なり`mapview`なりで。sfオブジェクトにうんぬんしたいよね。
+
+さらにp値もまた、ゾーンごとに計算できる。
+これもプロットしてみ等ございます。
+計算はできてるのに、なぜか値を取り出せない。
+```{r}
+pref$lmoran_p <- lmoran[, "Pr(z!=E(Ii))"]
+breaks <- c(0, 0.01,  0.05, 0.1, 1)
+nc <- length(breaks) -1
+pal <- rev(RColorBrewer::brewer.pal(n = nc, name = "YlOrRed"))
+plot(pref[, "lmoran"], pal = pal, breaks = breaks)
+```
+
+### モラン散布図
+
+横軸をyi-y_mena, 縦軸をΣw(yi-y)としたプロット。
+意味は、右上がホットスポット、左下がクールスポット、右下が独り勝ち、左上が独り負け。
+
+
+```{r}
+moran.plot(pop, listw = w, labels = pref$name, pch = 20)
+```
+
+
+### ローカルギアリC統計量
+
+節はあるけど計算がない！
+まあメインストリームでないなら仕方ないね。
+
+### ローカルG/G*統計量
+
+これも結局、自ゾーンを考慮に入れるG*統計量のほうがかしこい。
+おぼえているだろうか、対角成分を1にしたことを。
+これがまさに、自ゾーンの影響を考慮している、という意味である。
+名前もまさに`include.self()`であり、その通りの名称であるな。
+
+```{r}
+w_b2 <- nb2listw(include.self(nb2)) 
+```
+
+で、この計算では、z値だけが出力になる。
+```{r}
+lG <- localG(pop, listw = w_b2)
+```
+
+```{r}
+pref$lG <- lG
+breaks <- c(-5, -2.58, -1.96, -1.65, 0, 1.65, 1.96, 2.58, 5) #10%, 5%, 1% 有意の区分
+nc <- length(breaks) -1
+pal <- rev(RColorBrewer::brewer.pal(n = nc, name = "RdYlBu"))
+plot(pref[, "lG"], pal = pal, breaks = breaks)
+```
+
+
