@@ -1,0 +1,63 @@
+---
+title: "Chap9"
+output: html_document
+date: "2023-09-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### spatialregによる実例
+
+```{r}
+library(spatialreg)
+library(spdep)
+library(car)
+```
+
+```{r}
+data(boston)
+```
+
+```{r}
+boston.c[1:5,]
+```
+
+いまから、住宅価格の中央値（修正値）であるところのCMEDVを被説明変数とする分析事例をだす。
+
+これはnb形式で隣接性をまとめたもの。
+
+```{r}
+boston.soi
+```
+
+### 推定方法一覧
+
+| なまえ                   | 式                       | 備考                      |
+|--------------------------|--------------------------|---------------------------|
+| 空間ラグモデル           | `spatialreg::lagsarlm`   |                           |
+| 空間エラーモデル         | `spatialreg::errorsarlm` |                           |
+| 空間ダービンモデル       | `spatialreg::lagsarlm`   | `type="mixed"` とする。   |
+| 空間ダービンエラーモデル | `spatialreg::errorsarlm` | `etype="emixed"` とする。 |
+| SLXモデル                | `spatialreg::lmSLX`      |                           |
+| SARARモデル              | `spatialreg::sacsarlm`   |                           |
+
+
+関数名はみたところ`***sarlm`のようである。
+`lm`は言わずと知れた`lm`のことであろう。
+そこにSARを示す`sar`があると思われる。
+
+### 下準備
+
+なんにせよまず、重み行列である
+```{r}
+w <- nb2listw(boston.soi)
+```
+
+
+### 空間ラグモデル
+
+### 空間エラーモデル
+
+### 空間ダービンモデル
