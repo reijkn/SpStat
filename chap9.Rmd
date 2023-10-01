@@ -133,6 +133,22 @@ summary(tree2)
 
 ### 空間ラグモデル
 
+以下のように出す。
+`spatialreg::lagsarlm`
+ - 第一引数：モデル式
+ - 第二引数：推定に使うデータフレーム
+ - 第三引数：重み行列（行基準化したのが普通）
+ - 第四引数：特異性の許容度合調整パラメータ、逆行列計算の
+```{r}
+slm <- spatialreg::lagsarlm(formula, boston.c, listw = w, tol.solve = 1.0e-20)
+```
+
+結果をみる
+```{r}
+summary(slm)
+```
+
+
 ### 空間エラーモデル
 
 ### 空間ダービンモデル
